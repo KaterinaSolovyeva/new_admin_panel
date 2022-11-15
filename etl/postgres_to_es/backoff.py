@@ -33,7 +33,7 @@ def backoff(
                     return func(*args, **kwargs)
                 except Exception as error:
                     n += 1
-                    logging.error(
+                    logging.exception(
                         f'An error {error} occurred while executing'
                         f' the function {func.__name__}'
                     )

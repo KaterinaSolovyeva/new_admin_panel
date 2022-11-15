@@ -4,7 +4,7 @@ from datetime import datetime
 from config import LOGGING_CONFIG
 from loaders import ElasticSearchLoader, PostgresExtractor
 from movies_query import movies_query
-from state import JsonFileStorage, RedisStorage, State
+from state import JsonFileStorage, State
 from tables import ElasticSearchSchema
 
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -53,8 +53,8 @@ class ETL:
         """Extract data from Postgres starting from the date in state 'modified'."""
         logging.info('Starting EXTRACT')
         state = self.state.get_state('modified')
-        modified = state if state else datetime.min
-        for batch in self.postgres.extract_movies(movies_query, (modified, )):
+        modified = state or datetime.min
+        for batch in self.postgres.extract_movies(movies_query, (modified, ) * 3):
             yield batch
         logging.info('EXTRACT is finished')
 

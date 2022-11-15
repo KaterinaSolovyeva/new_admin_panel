@@ -1,4 +1,4 @@
-
+import contextlib
 import logging.config
 
 import psycopg2
@@ -6,7 +6,7 @@ from elasticsearch import Elasticsearch, helpers
 from psycopg2.extras import DictCursor
 
 from backoff import backoff
-from config import BATCH_SIZE, ELASTIC_DSN, LOGGING_CONFIG, POSTGRES_DSN
+from config import LOGGING_CONFIG, Settings
 from indices import movies_index
 from tables import ElasticSearchSchema
 
@@ -15,12 +15,6 @@ logging.config.dictConfig(LOGGING_CONFIG)
 
 class PostgresExtractor:
     """Extracts data from Postgres."""
-    @backoff(logging=logging)
-    def __init__(self) -> None:
-        """Initialize postgres extractor."""
-        self.conn = psycopg2.connect(**POSTGRES_DSN, cursor_factory=DictCursor)
-        self.cursor = self.conn.cursor()
-        logging.info('Postgres DB connected')
 
     @backoff(logging=logging)
     def extract_movies(
@@ -34,10 +28,17 @@ class PostgresExtractor:
         Yield:
             batch of extracted data
         """
-        select_query = self.cursor.mogrify(select_query, params)
-        self.cursor.execute(select_query)
-        while batch := self.cursor.fetchmany(BATCH_SIZE):
-            yield batch
+        with contextlib.closing(
+            psycopg2.connect(
+                **Settings().POSTGRES_DSN.dict(),
+                cursor_factory=DictCursor
+            )
+        ) as self.conn, self.conn.cursor() as self.cursor:
+            logging.info('Postgres DB connected')
+            select_query = self.cursor.mogrify(select_query, params)
+            self.cursor.execute(select_query)
+            while batch := self.cursor.fetchmany(Settings().BATCH_SIZE):
+                yield batch
 
 
 class ElasticSearchLoader:
@@ -45,7 +46,7 @@ class ElasticSearchLoader:
     @backoff(logging=logging)
     def __init__(self) -> None:
         """Initialize elasticsearch loader. Check the availability of desired index"""
-        self.client = Elasticsearch(**ELASTIC_DSN)
+        self.client = Elasticsearch(**Settings().ELASTIC_DSN.dict())
         logging.info('ElasticSearch DB connected')
         self.check_or_create_index()
 

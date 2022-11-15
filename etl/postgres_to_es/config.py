@@ -1,35 +1,44 @@
-import os
+from pydantic import BaseSettings, Field
 
-from dotenv import load_dotenv
 
-load_dotenv()
+class PostgresSettings(BaseSettings):
+    dbname: str = Field('movies_database', env='POSTGRES_DB')
+    user: str = Field('app', env='POSTGRES_USER')
+    password: str = Field('123qwe', env='POSTGRES_PASSWORD')
+    host: str = Field('localhost', env='DB_HOST')
+    port: str = Field(5432, env='DB_PORT')
+    options: str = '-c search_path=content'
 
-BATCH_SIZE = 1000
-UPDATE_TIME = 10
+    class Config:
+        env_file = '.env'
+        env_file_encoding = 'utf-8'
 
-POSTGRES_DSN = {
-    'dbname': os.environ.get('POSTGRES_DB'),
-    'user': os.environ.get('POSTGRES_USER'),
-    'password': os.environ.get('POSTGRES_PASSWORD'),
-    'host': os.environ.get('DB_HOST', 'localhost'),
-    'port': os.environ.get('DB_PORT', 5432),
-    'options': '-c search_path=content'
-}
 
-ELASTIC_DSN = {
-    'hosts': ['http://{}:{}'.format(os.environ.get('ELASTIC_HOST'),
-                                    os.environ.get('ELASTIC_PORT'))],
-    'basic_auth': (
-        os.environ.get('ELASTIC_USER'),
-        os.environ.get('ELASTIC_PASSWORD')
-    )
-}
+class ElasticSettings(BaseSettings):
+    hosts: str = Field('http://localhost:9200', env='ELASTIC_ADDRESS')
 
-REDIS_DSL = {
-    'host': os.environ.get('REDIS_HOST'),
-    'port': os.environ.get('REDIS_PORT'),
-    'decode_responses': True
-}
+    class Config:
+        env_file = '.env'
+        env_file_encoding = 'utf-8'
+
+
+class RedisSettings(BaseSettings):
+    host: str = Field('redis', env='REDIS_HOST')
+    port: str = Field('6379', env='REDIS_PORT')
+    decode_responses: bool = True
+
+    class Config:
+        env_file = '.env'
+        env_file_encoding = 'utf-8'
+
+
+class Settings(BaseSettings):
+    BATCH_SIZE: int = 100
+    UPDATE_TIME: int = 10
+    POSTGRES_DSN: PostgresSettings = PostgresSettings()
+    ELASTIC_DSN: ElasticSettings = ElasticSettings()
+    REDIS_DSN: RedisSettings = RedisSettings()
+
 
 LOGGING_CONFIG = {
     'version': 1,

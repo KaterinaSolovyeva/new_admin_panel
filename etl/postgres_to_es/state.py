@@ -6,7 +6,7 @@ from typing import Any
 from redis import Redis, exceptions
 
 from backoff import backoff
-from config import LOGGING_CONFIG, REDIS_DSL
+from config import LOGGING_CONFIG, Settings
 
 logging.config.dictConfig(LOGGING_CONFIG)
 
@@ -47,7 +47,7 @@ class RedisStorage(BaseStorage):
 
     @backoff(logging=logging)
     def connect(self):
-        self.db = Redis(**REDIS_DSL)
+        self.db = Redis(**Settings().REDIS_DSN.dict())
         logging.info('Redis DB connected')
 
     @backoff(logging=logging)
